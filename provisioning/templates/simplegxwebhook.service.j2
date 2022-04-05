@@ -1,0 +1,21 @@
+[Unit]
+Description=XMPP Grafana Webhook
+After=network.target
+
+[Service]
+User={{ SERVICE_USER }}
+Group={{ SERVICE_USER }}
+RuntimeDirectory=/home/{{ SERVICE_USER }}/{{ SERVICE_DIR}}
+
+Environment="JID={{ XMPP_JID }}"
+Environment="PASSWORD={{ XMPP_PASSWORD }}"
+Environment="RECIPIENT={{ XMPP_RECIPIENT }}"
+Environment="PORT=8787"
+Environment="BINDADDRESS=127.0.0.1"
+ExecStart=/home/{{ SERVICE_USER }}/{{ SERVICE_DIR}}/venv/bin/python /home/{{ SERVICE_USER }}/{{ SERVICE_DIR}}/grafana-webhook.py
+
+Restart=always
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

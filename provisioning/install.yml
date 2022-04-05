@@ -1,0 +1,65 @@
+---
+- name: Deploying Grafana webhook
+  hosts: all
+  vars:
+    SERVICE_USER: "grafana_webhook"
+    SERVICE_DIR: "simplegxwebhook"
+  vars_prompt:
+    - name: XMPP_JID
+      prompt: "Enter XMPP JID for the service:"
+      private: no
+    - name: XMPP_PASSWORD
+      prompt: "Enter XMPP JID's password for the service"
+    - name: XMPP_RECIPIENT
+      prompt: "Enter the alert recipient:"
+      private: no
+  tasks:
+    - name: Add the user
+      user:
+        name: "{{ SERVICE_USER }}"
+        shell: /bin/bash
+      become: yes
+      become_user: "root"
+
+    - name: Create project directory
+      file:
+        path: "/home/{{ SERVICE_USER }}/{{ SERVICE_DIR }}"
+        state: directory
+      become: yes
+      become_user: "{{ SERVICE_USER }}"
+
+    - name: Upload file
+      copy:
+        src: "../"
+        dest: "/home/{{ SERVICE_USER }}/{{ SERVICE_DIR }}"
+      become: yes
+      become_user: "{{ SERVICE_USER }}"
+
+    - name: Create venv directory
+      command: python3 -m venv /home/{{ SERVICE_USER }}/{{ SERVICE_DIR }}/venv
+      become: yes
+      become_user: "{{ SERVICE_USER }}"
+
+    - name: pip install requirements.txt (in venv)
+      pip:
+        requirements: /home/{{ SERVICE_USER }}/{{ SERVICE_DIR }}/requirements.txt
+        virtualenv: /home/{{ SERVICE_USER }}/{{ SERVICE_DIR }}/venv
+        virtualenv_python: python3
+      become: yes
+      become_user: "{{ SERVICE_USER }}"
+
+    - name: Upload systemd service
+      template:
+        src: "simplegxwebhook.service.j2"
+        dest: "/etc/systemd/system/simplegxwebhook.service"
+      become: yes
+      become_user: root
+
+    - name: Enabling and starting systemd service
+      systemd:
+        daemon_reload: yes
+        enabled: yes
+        state: restarted
+        name: "simplegxwebhook.service"
+      become: yes
+      become_user: root
